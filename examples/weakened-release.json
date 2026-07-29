@@ -1,0 +1,79 @@
+{
+  "schemaVersion": "1.0",
+  "id": "checkout-release-42-weakened",
+  "goal": "Deploy checkout API v42 faster",
+  "environment": "production",
+  "recoveryBudgetMinutes": 90,
+  "maxIrreversibleActions": 2,
+  "actions": [
+    {
+      "id": "snapshot-db",
+      "label": "Snapshot checkout database",
+      "system": "postgres",
+      "operation": "create snapshot checkout-pre-42",
+      "effect": "create",
+      "reversibility": "reversible",
+      "risk": "medium",
+      "dependsOn": [],
+      "blastRadius": {
+        "resources": 1,
+        "principals": 0,
+        "scope": "organization"
+      },
+      "idempotencyKey": "release-42:snapshot-db",
+      "recovery": {
+        "operation": "delete snapshot checkout-pre-42",
+        "verify": "snapshot checkout-pre-42 is absent",
+        "expectedMinutes": 1
+      }
+    },
+    {
+      "id": "deploy-api",
+      "label": "Deploy checkout API",
+      "system": "kubernetes",
+      "operation": "set checkout-api image to v42",
+      "effect": "update",
+      "reversibility": "compensatable",
+      "risk": "high",
+      "dependsOn": ["snapshot-db"],
+      "blastRadius": {
+        "resources": 8,
+        "principals": 12000,
+        "scope": "public"
+      },
+      "recovery": {
+        "operation": "deploy a follow-up image",
+        "verify": "a healthy image is running",
+        "expectedMinutes": 30
+      },
+      "approval": {
+        "required": false
+      }
+    },
+    {
+      "id": "migrate-schema",
+      "label": "Add nullable checkout column",
+      "system": "postgres",
+      "operation": "apply migration 0042",
+      "effect": "update",
+      "reversibility": "reversible",
+      "risk": "critical",
+      "dependsOn": ["deploy-api"],
+      "blastRadius": {
+        "resources": 2,
+        "principals": 12000,
+        "scope": "public"
+      },
+      "idempotencyKey": "release-42:migrate-schema",
+      "recovery": {
+        "operation": "manually rebuild the schema",
+        "verify": "schema looks correct",
+        "expectedMinutes": 45
+      },
+      "approval": {
+        "required": true,
+        "approverRole": "database-owner"
+      }
+    }
+  ]
+}

@@ -1,0 +1,84 @@
+{
+  "schemaVersion": "1.0",
+  "id": "checkout-release-42",
+  "goal": "Deploy checkout API v42 with a verified database rollback",
+  "environment": "production",
+  "recoveryBudgetMinutes": 20,
+  "maxIrreversibleActions": 0,
+  "actions": [
+    {
+      "id": "snapshot-db",
+      "label": "Snapshot checkout database",
+      "system": "postgres",
+      "operation": "create snapshot checkout-pre-42",
+      "effect": "create",
+      "reversibility": "reversible",
+      "risk": "medium",
+      "dependsOn": [],
+      "blastRadius": {
+        "resources": 1,
+        "principals": 0,
+        "scope": "organization"
+      },
+      "idempotencyKey": "release-42:snapshot-db",
+      "recovery": {
+        "operation": "delete snapshot checkout-pre-42",
+        "verify": "snapshot checkout-pre-42 is absent",
+        "expectedMinutes": 1
+      }
+    },
+    {
+      "id": "deploy-api",
+      "label": "Deploy checkout API",
+      "system": "kubernetes",
+      "operation": "set checkout-api image to v42",
+      "effect": "update",
+      "reversibility": "reversible",
+      "risk": "high",
+      "dependsOn": ["snapshot-db"],
+      "blastRadius": {
+        "resources": 8,
+        "principals": 12000,
+        "scope": "public"
+      },
+      "idempotencyKey": "release-42:deploy-api",
+      "recovery": {
+        "operation": "restore checkout-api image v41",
+        "verify": "all checkout-api pods report image v41 and healthy",
+        "expectedMinutes": 6,
+        "backupRef": "registry://checkout-api:v41"
+      },
+      "approval": {
+        "required": true,
+        "approverRole": "release-manager"
+      }
+    },
+    {
+      "id": "migrate-schema",
+      "label": "Add nullable checkout column",
+      "system": "postgres",
+      "operation": "apply migration 0042",
+      "effect": "update",
+      "reversibility": "reversible",
+      "risk": "critical",
+      "dependsOn": ["deploy-api"],
+      "blastRadius": {
+        "resources": 2,
+        "principals": 12000,
+        "scope": "public"
+      },
+      "idempotencyKey": "release-42:migrate-schema",
+      "recovery": {
+        "operation": "restore checkout database from snapshot",
+        "verify": "schema version equals 0041 and integrity checks pass",
+        "expectedMinutes": 10,
+        "backupRef": "snapshot://checkout-pre-42"
+      },
+      "approval": {
+        "required": true,
+        "approverRole": "database-owner",
+        "ticket": "REL-42"
+      }
+    }
+  ]
+}

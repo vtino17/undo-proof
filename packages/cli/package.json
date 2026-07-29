@@ -1,0 +1,17 @@
+{
+  "name": "@undoproof/cli",
+  "version": "0.1.0",
+  "description": "CLI for agent reversibility audits and recovery-pack compilation.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "bin": {
+    "undo-proof": "./dist/index.js"
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json"
+  },
+  "dependencies": {
+    "@undoproof/core": "workspace:*"
+  }
+}

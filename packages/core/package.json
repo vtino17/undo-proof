@@ -1,0 +1,12 @@
+{
+  "name": "@undoproof/core",
+  "version": "0.1.0",
+  "description": "Reversibility audit, failure simulation, and recovery-pack engine.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json"
+  }
+}

@@ -1,0 +1,46 @@
+{
+  "schemaVersion": "1.0",
+  "id": "cleanup-production",
+  "goal": "Remove old customer records",
+  "environment": "production",
+  "recoveryBudgetMinutes": 10,
+  "maxIrreversibleActions": 0,
+  "actions": [
+    {
+      "id": "delete-customers",
+      "label": "Delete inactive customers",
+      "system": "postgres",
+      "operation": "delete all customers marked inactive",
+      "effect": "delete",
+      "reversibility": "reversible",
+      "risk": "critical",
+      "dependsOn": [],
+      "blastRadius": {
+        "resources": 5400,
+        "principals": 5400,
+        "scope": "public"
+      },
+      "recovery": {
+        "operation": "restore deleted rows",
+        "verify": "customer count equals pre-delete count",
+        "expectedMinutes": 25
+      }
+    },
+    {
+      "id": "email-summary",
+      "label": "Email deletion summary",
+      "system": "mailer",
+      "operation": "send deletion report to affected customers",
+      "effect": "publish",
+      "reversibility": "irreversible",
+      "risk": "high",
+      "dependsOn": ["delete-customers"],
+      "blastRadius": {
+        "resources": 1,
+        "principals": 5400,
+        "scope": "public"
+      },
+      "idempotencyKey": "cleanup-production:email-summary"
+    }
+  ]
+}
