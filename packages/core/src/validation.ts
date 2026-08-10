@@ -88,10 +88,35 @@ function validateAction(value: unknown, index: number): ValidationIssue[] {
       if (!nonNegative(value.recovery.expectedMinutes)) {
         issues.push({ path: `${path}.recovery.expectedMinutes`, message: "Must be non-negative." });
       }
+      for (const field of ["backupRef", "usesReceipt"] as const) {
+        if (value.recovery[field] !== undefined && !text(value.recovery[field])) {
+          issues.push({ path: `${path}.recovery.${field}`, message: "Must be a non-empty string." });
+        }
+      }
     }
   }
-  if (value.approval !== undefined && !object(value.approval)) {
-    issues.push({ path: `${path}.approval`, message: "Must be an object." });
+  if (value.approval !== undefined) {
+    if (!object(value.approval)) {
+      issues.push({ path: `${path}.approval`, message: "Must be an object." });
+    } else {
+      if (typeof value.approval.required !== "boolean") {
+        issues.push({ path: `${path}.approval.required`, message: "Must be boolean." });
+      }
+      for (const field of ["approverRole", "ticket"] as const) {
+        if (value.approval[field] !== undefined && !text(value.approval[field])) {
+          issues.push({ path: `${path}.approval.${field}`, message: "Must be a non-empty string." });
+        }
+      }
+    }
+  }
+  if (value.idempotencyKey !== undefined && !text(value.idempotencyKey)) {
+    issues.push({ path: `${path}.idempotencyKey`, message: "Must be a non-empty string." });
+  }
+  if (value.preconditions !== undefined && (!Array.isArray(value.preconditions) || !value.preconditions.every(text))) {
+    issues.push({ path: `${path}.preconditions`, message: "Must be an array of non-empty strings." });
+  }
+  if (value.commitPoint !== undefined && typeof value.commitPoint !== "boolean") {
+    issues.push({ path: `${path}.commitPoint`, message: "Must be boolean." });
   }
   return issues;
 }

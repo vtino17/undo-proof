@@ -67,4 +67,15 @@ describe("reversibility audit", () => {
       ]),
     );
   });
+
+  it("rejects truthy non-boolean approval controls", () => {
+    const malformed = structuredClone(safePlan);
+    (malformed.actions[1] as unknown as { approval: unknown }).approval = {
+      required: "yes",
+      approverRole: ["release-manager"],
+    };
+
+    expect(() => auditPlan(malformed)).toThrow("actions[1].approval.required");
+    expect(() => auditPlan(malformed)).toThrow("actions[1].approval.approverRole");
+  });
 });
