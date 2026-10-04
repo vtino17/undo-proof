@@ -1,4 +1,4 @@
-{
+﻿{
   "name": "undo-proof",
   "version": "0.1.0",
   "private": true,
@@ -15,6 +15,7 @@
     "preproof": "pnpm --filter @undoproof/core build && pnpm --filter @undoproof/cli build",
     "proof": "node packages/cli/dist/index.js"
   },
+  "license": "MIT",
   "engines": {
     "node": ">=20"
   },
